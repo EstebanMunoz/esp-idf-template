@@ -54,7 +54,7 @@ uv tool install copier
 Go to the directory in which you want to create the project, and run
 
 ```bash
-copier copy gh:EstebanMunoz/esp-idf-template .
+copier copy --trust gh:EstebanMunoz/esp-idf-template .
 ```
 ### 4. Configure IDF paths (Optional)
 
