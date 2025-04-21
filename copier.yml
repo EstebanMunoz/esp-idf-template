@@ -1,0 +1,75 @@
+user_name:
+  type: str
+  help: Type the name of the author
+
+project_name:
+  type: str
+  help: What is the project name?
+  validator: "{% if project_name == '' %}This value is mandatory{% endif %}"
+
+build_project:
+  type: bool
+  help: Do you want an initial build of the project?
+  default: yes
+
+idf_path:
+  type: str
+  help: Path to the ESP-IDF framework
+  when: "{{ build_project }}"
+  default: ""
+
+idf_tools_path:
+  type: str
+  help: Path to the ESP-IDF tools
+  when: "{{ build_project }}"
+  default: ""
+
+idf_clangd_path:
+  type: str
+  when: false
+  default: "{% if idf_tools_path != '' %}{{ (idf_tools_path ~ '/tools/esp-clang/esp*/esp-clang/bin/clangd') | fileglob | first }}{% endif %}"
+
+editor:
+  type: str
+  help: Which editor do you want to use?
+  default: Zed
+  multiselect: true
+  choices:
+    - Zed
+    - VS Code
+    - Other
+
+license:
+  type: str
+  help: What license do you want to include?
+  default: MIT
+  choices:
+    - MIT
+    - MIT-0
+    - No license
+
+_exclude:
+  # Exclude everything except the template dir
+  - "*"
+  - "!{{ project_name }}"
+
+_tasks:
+  # --- Build the project ---
+  # Source the IDF framework in linux/Mac OS and build the project
+  - command: bash -c 'cd {{ project_name }}; source {{ idf_path }}/export.sh; idf.py build'
+    when: "{{ build_project and _copier_operation == 'copy' and _copier_conf.os in  ['linux', 'macos'] }}"
+    working_directory: "{{ project_name }}"
+  # Source the IDF framework in windows and build the project
+  - command:
+      [
+        powershell,
+        "{{ idf_tools_path }}/Initialize-Idf.ps1 -IdfId (Get-Content {{ idf_tools_path }}/esp_idf.json | ConvertFrom-Json).IdfSelectedId; idf.py build",
+      ]
+    when: "{{ build_project and _copier_operation == 'copy' and _copier_conf.os == 'windows' }}"
+    working_directory: "{{ project_name }}"
+  # --- Build the project ---
+
+  # --- Initialize the git repo ---
+  - command: git init; git add .; git commit -m "Initial commit"
+    working_directory: "{{ project_name }}"
+  # --- Initialize the git repo ---
